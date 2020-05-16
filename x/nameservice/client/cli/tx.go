@@ -28,6 +28,9 @@ func GetTxCmd(storeKey string, cdc *codec.Codec) *cobra.Command {
 		GetCmdBuyName(cdc),
 		GetCmdSetName(cdc),
 		GetCmdDeleteName(cdc),
+		GetCmdSetAuction(cdc),
+		GetCmdBidName(cdc),
+		GetCmdClaimName(cdc),
 	)...)
 
 	return nameserviceTxCmd
@@ -100,6 +103,86 @@ func GetCmdDeleteName(cdc *codec.Codec) *cobra.Command {
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
 
 			msg := types.NewMsgDeleteName(args[0], cliCtx.GetFromAddress())
+			err := msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+
+			// return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, msgs)
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+		},
+	}
+}
+
+
+// GetCmdDeleteName is the CLI command for sending a DeleteName transaction
+func GetCmdSetAuction(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "auction [name]",
+		Short: "set the name auction state to start auction",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			inBuf := bufio.NewReader(cmd.InOrStdin())
+			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			coins, err := sdk.ParseCoins(args[1])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgSetAuction(args[0], coins, cliCtx.GetFromAddress())
+			err1 := msg.ValidateBasic()
+			if err1 != nil {
+				return err1
+			}
+
+			// return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, msgs)
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+		},
+	}
+}
+
+// GetCmdDeleteName is the CLI command for sending a DeleteName transaction
+func GetCmdBidName(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "bid [name]",
+		Short: "take bid with auction name",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			inBuf := bufio.NewReader(cmd.InOrStdin())
+			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			coins, err := sdk.ParseCoins(args[1])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgBidName(args[0], cliCtx.GetFromAddress(), coins)
+			err1 := msg.ValidateBasic()
+			if err1 != nil {
+				return err1
+			}
+
+			// return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, msgs)
+			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+		},
+	}
+}
+
+// GetCmdDeleteName is the CLI command for sending a DeleteName transaction
+func GetCmdClaimName(cdc *codec.Codec) *cobra.Command {
+	return &cobra.Command{
+		Use:   "claim [name]",
+		Short: "claim name for auction",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx := context.NewCLIContext().WithCodec(cdc)
+			inBuf := bufio.NewReader(cmd.InOrStdin())
+			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
+
+			msg := types.NewMsgClaimName(args[0], cliCtx.GetFromAddress())
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err

@@ -103,3 +103,40 @@ func NewKeeper(cdc *codec.Codec, storeKey sdk.StoreKey, coinKeeper types.BankKee
 		CoinKeeper: coinKeeper,
 	}
 }
+
+
+// SetName - sets the value string that a name resolves to
+func (k Keeper) SetAuction(ctx sdk.Context, name string, value bool) {
+	whois := k.GetWhois(ctx, name)
+	whois.IsAuction = value
+	k.SetWhois(ctx, name, whois)
+}
+
+// GetAuction - get the auction state of a name
+func (k Keeper) GetAuction(ctx sdk.Context, name string) bool {
+	return k.GetWhois(ctx, name).IsAuction
+}
+
+// SetBlockHeight
+func (k Keeper) SetBidHeight(ctx sdk.Context, name string, value int64) {
+	whois := k.GetWhois(ctx, name)
+	whois.BlockHeight = value
+	k.SetWhois(ctx, name, whois)
+}
+
+// GetAuction - get the auction state of a name
+func (k Keeper) GetBidHeight(ctx sdk.Context, name string) int64 {
+	return k.GetWhois(ctx, name).BlockHeight
+}
+
+// SetBlockHeight
+func (k Keeper) SetBidUser(ctx sdk.Context, name string, value sdk.AccAddress) {
+	whois := k.GetWhois(ctx, name)
+	whois.BidUser = value
+	k.SetWhois(ctx, name, whois)
+}
+
+// GetAuction - get the auction state of a name
+func (k Keeper) GetBidUser(ctx sdk.Context, name string) sdk.AccAddress {
+	return k.GetWhois(ctx, name).BidUser
+}

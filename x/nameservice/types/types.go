@@ -15,6 +15,9 @@ type Whois struct {
 	Value string         `json:"value"`
 	Owner sdk.AccAddress `json:"owner"`
 	Price sdk.Coins      `json:"price"`
+	IsAuction   bool           `json:"isAuction"`
+	BlockHeight int64          `json:"blockHeight"`
+	BidUser     sdk.AccAddress `json:"bidUser"`
 }
 
 // NewWhois returns a new Whois with the minprice as the price

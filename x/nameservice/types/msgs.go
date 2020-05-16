@@ -5,8 +5,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// const RouterKey = ModuleName // this was defined in your key.go file
-
 // MsgSetName defines a SetName message
 type MsgSetName struct {
 	Name  string         `json:"name"`
@@ -96,7 +94,6 @@ func (msg MsgBuyName) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Buyer}
 }
 
-
 // MsgDeleteName defines a DeleteName message
 type MsgDeleteName struct {
 	Name  string         `json:"name"`
@@ -135,5 +132,136 @@ func (msg MsgDeleteName) GetSignBytes() []byte {
 
 // GetSigners defines whose signature is required
 func (msg MsgDeleteName) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
+}
+
+// MsgDeleteName defines a DeleteName message
+type MsgSetAuction struct {
+	Name  string         `json:"name"`
+	Price sdk.Coins      `json:"price"`
+	Owner sdk.AccAddress `json:"owner"`
+}
+
+// NewMsgSetAuction is a constructor function for NewMsgSetAuction
+func NewMsgSetAuction(name string, price sdk.Coins, owner sdk.AccAddress) MsgSetAuction {
+	return MsgSetAuction{
+		Name:  name,
+		Price: price,
+		Owner: owner,
+	}
+}
+
+// Route should return the name of the module
+func (msg MsgSetAuction) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgSetAuction) Type() string { return "set_auction" }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgSetAuction) ValidateBasic() error {
+	if msg.Owner.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Owner.String())
+	}
+	if len(msg.Name) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Name cannot be empty")
+	}
+	if !msg.Price.IsAllPositive() {
+		return sdkerrors.ErrInsufficientFunds
+	}
+
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg MsgSetAuction) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgSetAuction) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
+}
+
+// MsgBidName defines a DeleteName message
+type MsgBidName struct {
+	Name  string         `json:"name"`
+	Bid   sdk.Coins      `json:"bid"`
+	Bider sdk.AccAddress `json:"owner"`
+}
+
+// NewMsgSetAuction is a constructor function for NewMsgSetAuction
+func NewMsgBidName(name string, bider sdk.AccAddress, bid sdk.Coins) MsgBidName {
+	return MsgBidName{
+		Name:  name,
+		Bider: bider,
+		Bid:   bid,
+	}
+}
+
+// Route should return the name of the module
+func (msg MsgBidName) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgBidName) Type() string { return "bid_name" }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgBidName) ValidateBasic() error {
+	if msg.Bider.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Bider.String())
+	}
+	if len(msg.Name) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Name cannot be empty")
+	}
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg MsgBidName) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgBidName) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Bider}
+}
+
+// MsgDeleteName defines a DeleteName message
+type MsgClaimName struct {
+	Name  string         `json:"name"`
+	Owner sdk.AccAddress `json:"owner"`
+}
+
+// NewMsgSetAuction is a constructor function for NewMsgSetAuction
+func NewMsgClaimName(name string, owner sdk.AccAddress) MsgClaimName {
+	return MsgClaimName{
+		Name:  name,
+		Owner: owner,
+	}
+}
+
+// Route should return the name of the module
+func (msg MsgClaimName) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgClaimName) Type() string { return "claim_name" }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgClaimName) ValidateBasic() error {
+	if msg.Owner.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, msg.Owner.String())
+	}
+	if len(msg.Name) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Name cannot be empty")
+	}
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg MsgClaimName) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgClaimName) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }

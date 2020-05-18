@@ -6,19 +6,22 @@ import (
 )
 
 const (
-	ModuleName   = types.ModuleName
-	RouterKey    = types.RouterKey
-	StoreKey     = types.StoreKey
-	QuerierRoute = types.QuerierRoute
+	ModuleName      = types.ModuleName
+	RouterKey       = types.RouterKey
+	StoreKey        = types.StoreKey
+	AuctionStoreKey = types.AuctionStoreKey
+	QuerierRoute    = types.QuerierRoute
 )
 
 var (
 	NewKeeper        = keeper.NewKeeper
+	//NewAuctionKeeper = keeper.NewAuctionKeeper
 	NewQuerier       = keeper.NewQuerier
 	NewMsgBuyName    = types.NewMsgBuyName
 	NewMsgSetName    = types.NewMsgSetName
 	NewMsgDeleteName = types.NewMsgDeleteName
 	NewWhois         = types.NewWhois
+	NewAuction       = types.NewAuction
 	ModuleCdc        = types.ModuleCdc
 	RegisterCodec    = types.RegisterCodec
 )

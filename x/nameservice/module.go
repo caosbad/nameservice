@@ -1,21 +1,20 @@
-
 package nameservice
 
 import (
 	"encoding/json"
+	"github.com/caosbad/nameservice/x/nameservice/keeper"
+	"github.com/gorilla/mux"
+	"github.com/spf13/cobra"
 
-"github.com/gorilla/mux"
-"github.com/spf13/cobra"
+	"github.com/caosbad/nameservice/x/nameservice/client/cli"
+	"github.com/caosbad/nameservice/x/nameservice/client/rest"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/x/bank"
 
-"github.com/cosmos/cosmos-sdk/codec"
-"github.com/cosmos/cosmos-sdk/types/module"
-"github.com/cosmos/cosmos-sdk/x/bank"
-"github.com/caosbad/nameservice/x/nameservice/client/cli"
-"github.com/caosbad/nameservice/x/nameservice/client/rest"
-
-"github.com/cosmos/cosmos-sdk/client/context"
-sdk "github.com/cosmos/cosmos-sdk/types"
-abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/cosmos/cosmos-sdk/client/context"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // type check to ensure the interface is properly implemented
@@ -101,7 +100,26 @@ func (am AppModule) NewQuerierHandler() sdk.Querier {
 	return NewQuerier(am.keeper)
 }
 
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
+func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+	var records []Whois
+	currentBlockHeight := ctx.BlockHeight()
+	iterator := am.keeper.GetNamesIterator(ctx)
+	for ; iterator.Valid(); iterator.Next() {
+
+		name := string(iterator.Key())
+		whois := am.keeper.GetWhois(ctx, name)
+		shouldSettleAuto := currentBlockHeight - whois.BlockHeight > 100
+		if whois.IsAuction && shouldSettleAuto {
+			records = append(records, whois)
+		}
+	}
+	//store := ctx.KVStore(am.keeper.storeKey)
+	for _, n := range records {
+		am.keeper.SetBidHeight(ctx, n.BlockHeight, 0)
+		am.keeper.SetOwner(ctx, n.Name, keeper.GetBidUser(ctx, msg.Name))
+		am.keeper.SetAuction(ctx, n.Name, false)
+	}
+}
 
 func (am AppModule) EndBlock(sdk.Context, abci.RequestEndBlock) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}

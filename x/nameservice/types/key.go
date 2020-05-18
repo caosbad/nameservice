@@ -7,6 +7,8 @@ const (
 	// StoreKey to be used when creating the KVStore
 	StoreKey = ModuleName
 
+	AuctionStoreKey = "nameservice:auction"
+
 	// RouterKey is the module name router key
 	RouterKey = ModuleName
 

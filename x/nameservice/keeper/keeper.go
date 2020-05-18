@@ -10,9 +10,9 @@ import (
 type Keeper struct {
 	CoinKeeper types.BankKeeper
 
-	storeKey sdk.StoreKey // Unexposed key to access store from sdk.Context
-
-	cdc *codec.Codec // The wire codec for binary encoding/decoding.
+	storeKey        sdk.StoreKey // Unexposed key to access store from sdk.Context
+	auctionStoreKey sdk.StoreKey
+	cdc             *codec.Codec // The wire codec for binary encoding/decoding.
 }
 
 // Sets the entire Whois metadata struct for a name
@@ -38,8 +38,13 @@ func (k Keeper) GetWhois(ctx sdk.Context, name string) types.Whois {
 
 // Deletes the entire Whois metadata struct for a name
 func (k Keeper) DeleteWhois(ctx sdk.Context, name string) {
+	if k.GetWhois(ctx, name).IsAuction {
+		auctionStore := ctx.KVStore(k.auctionStoreKey)
+		auctionStore.Delete([]byte(name))
+	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete([]byte(name))
+
 }
 
 // ResolveName - returns the string that the name resolves to
@@ -96,14 +101,22 @@ func (k Keeper) GetNamesIterator(ctx sdk.Context) sdk.Iterator {
 }
 
 // NewKeeper creates new instances of the nameservice Keeper
-func NewKeeper(cdc *codec.Codec, storeKey sdk.StoreKey, coinKeeper types.BankKeeper) Keeper {
+func NewKeeper(cdc *codec.Codec, storeKey sdk.StoreKey, auctionStoreKey sdk.StoreKey, coinKeeper types.BankKeeper) Keeper {
 	return Keeper{
-		cdc:        cdc,
-		storeKey:   storeKey,
-		CoinKeeper: coinKeeper,
+		cdc:             cdc,
+		storeKey:        storeKey,
+		auctionStoreKey: auctionStoreKey,
+		CoinKeeper:      coinKeeper,
 	}
 }
 
+//func NewAuctionKeeper(cdc *codec.Codec, storeKey sdk.StoreKey, coinKeeper types.BankKeeper) Keeper {
+//	return Keeper{
+//		cdc:        cdc,
+//		storeKey:   storeKey,
+//		CoinKeeper: coinKeeper,
+//	}
+//}
 
 // SetName - sets the value string that a name resolves to
 func (k Keeper) SetAuction(ctx sdk.Context, name string, value bool) {
@@ -139,4 +152,22 @@ func (k Keeper) SetBidUser(ctx sdk.Context, name string, value sdk.AccAddress) {
 // GetAuction - get the auction state of a name
 func (k Keeper) GetBidUser(ctx sdk.Context, name string) sdk.AccAddress {
 	return k.GetWhois(ctx, name).BidUser
+}
+
+// Sets the entire Whois metadata struct for a name
+func (k Keeper) AddAuction(ctx sdk.Context, name string) {
+	whois := k.GetWhois(ctx, name)
+	if whois.Owner.Empty() {
+		return
+	}
+	store := ctx.KVStore(k.auctionStoreKey)
+	auction := types.NewAuction(whois, name)
+	store.Set([]byte(name), k.cdc.MustMarshalBinaryBare(auction))
+}
+
+
+// Deletes the entire Whois metadata struct for a name
+func (k Keeper) DeleteAuction(ctx sdk.Context, name string) {
+	store := ctx.KVStore(k.auctionStoreKey)
+	store.Delete([]byte(name))
 }

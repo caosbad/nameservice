@@ -26,6 +26,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/supply"
+	//"github.com/cosmos/cosmos-sdk/x/auth/client/utils"
+
 )
 
 const appName = "nameservice"
@@ -126,7 +128,7 @@ func NewNameServiceApp(logger log.Logger, db dbm.DB) *nameServiceApp {
 
 	// TODO: Add the keys that module requires
 	keys := sdk.NewKVStoreKeys(bam.MainStoreKey, auth.StoreKey, staking.StoreKey,
-		supply.StoreKey, distr.StoreKey, slashing.StoreKey, params.StoreKey, nameservice.StoreKey)
+		supply.StoreKey, distr.StoreKey, slashing.StoreKey, params.StoreKey, nameservice.StoreKey, nameservice.AuctionStoreKey)
 
 	tKeys := sdk.NewTransientStoreKeys(staking.TStoreKey, params.TStoreKey)
 
@@ -213,6 +215,7 @@ func NewNameServiceApp(logger log.Logger, db dbm.DB) *nameServiceApp {
 	app.nsKeeper = nameservice.NewKeeper(
 		app.cdc,
 		keys[nameservice.StoreKey],
+		keys[nameservice.AuctionStoreKey],
 		app.bankKeeper,
 	)
 	// NOTE: Any module instantiated in the module manager that is later modified
@@ -301,6 +304,8 @@ func (app *nameServiceApp) InitChainer(ctx sdk.Context, req abci.RequestInitChai
 
 // BeginBlocker application updates every begin block
 func (app *nameServiceApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+
+
 	return app.mm.BeginBlock(ctx, req)
 	// TODO add auto trade names
 }

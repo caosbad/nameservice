@@ -12,17 +12,18 @@ var MinNamePrice = sdk.Coins{sdk.NewInt64Coin("nametoken", 1)}
 
 // Whois is a struct that contains all the metadata of a name
 type Whois struct {
-	Value string         `json:"value"`
-	Owner sdk.AccAddress `json:"owner"`
-	Price sdk.Coins      `json:"price"`
+	Value       string         `json:"value"`
+	Owner       sdk.AccAddress `json:"owner"`
+	Price       sdk.Coins      `json:"price"`
 	IsAuction   bool           `json:"isAuction"`
 	BlockHeight int64          `json:"blockHeight"`
 	BidUser     sdk.AccAddress `json:"bidUser"`
 }
 
 type Auction struct {
-	Whois
-	Name string `json:name`
+	BlockHeight int64          `json:"blockHeight"`
+	BidUser     sdk.AccAddress `json:"bidUser"`
+	Name        string         `json:name`
 }
 
 // NewWhois returns a new Whois with the minprice as the price
@@ -33,10 +34,11 @@ func NewWhois() Whois {
 }
 
 func NewAuction(whois Whois, name string) Auction {
-	return Auction{
-		Whois: whois,
-		Name:  name,
-	}
+	var auction Auction
+	auction.Name = name
+	auction.BlockHeight = whois.BlockHeight
+	auction.BidUser = whois.BidUser
+	return auction
 }
 
 // implement fmt.Stringer
@@ -46,5 +48,5 @@ func (w Whois) String() string {
 
 // implement fmt.Stringer
 func (a Auction) String() string {
-	return strings.TrimSpace(fmt.Sprintf(`Name: %s Owner: %s Value: %s Price: %s IsAuction: %s BlockHeight: %s`,a.Name, a.Owner, a.Value, a.Price, a.IsAuction, a.BlockHeight))
+	return strings.TrimSpace(fmt.Sprintf(`Name: %s IsAuction: %s BlockHeight: %s BidUser %s`, a.Name,  a.BlockHeight, a.BidUser))
 }

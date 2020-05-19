@@ -100,6 +100,12 @@ func (k Keeper) GetNamesIterator(ctx sdk.Context) sdk.Iterator {
 	return sdk.KVStorePrefixIterator(store, []byte{})
 }
 
+// Get an iterator over all names in which the keys are the names and the values are the whois
+func (k Keeper) GetAuctionIterator(ctx sdk.Context) sdk.Iterator {
+	store := ctx.KVStore(k.auctionStoreKey)
+	return sdk.KVStorePrefixIterator(store, []byte{})
+}
+
 // NewKeeper creates new instances of the nameservice Keeper
 func NewKeeper(cdc *codec.Codec, storeKey sdk.StoreKey, auctionStoreKey sdk.StoreKey, coinKeeper types.BankKeeper) Keeper {
 	return Keeper{
@@ -126,11 +132,19 @@ func (k Keeper) SetAuction(ctx sdk.Context, name string, value bool) {
 }
 
 // GetAuction - get the auction state of a name
-func (k Keeper) GetAuction(ctx sdk.Context, name string) bool {
+func (k Keeper) GetAuctionStatus(ctx sdk.Context, name string) bool {
 	return k.GetWhois(ctx, name).IsAuction
 }
+// GetAuction - get the auction state of a name
+func (k Keeper) GetAuction(ctx sdk.Context, name string) types.Auction {
+	store := ctx.KVStore(k.auctionStoreKey)
+	bz := store.Get([]byte(name))
+	var auction types.Auction
+	k.cdc.MustUnmarshalBinaryBare(bz, &auction)
+	return auction
+}
 
-// SetBlockHeight
+// SetBidHeight
 func (k Keeper) SetBidHeight(ctx sdk.Context, name string, value int64) {
 	whois := k.GetWhois(ctx, name)
 	whois.BlockHeight = value
@@ -142,14 +156,14 @@ func (k Keeper) GetBidHeight(ctx sdk.Context, name string) int64 {
 	return k.GetWhois(ctx, name).BlockHeight
 }
 
-// SetBlockHeight
+// SetBidUser
 func (k Keeper) SetBidUser(ctx sdk.Context, name string, value sdk.AccAddress) {
 	whois := k.GetWhois(ctx, name)
 	whois.BidUser = value
 	k.SetWhois(ctx, name, whois)
 }
 
-// GetAuction - get the auction state of a name
+// GetBidUser - get the auction state of a name
 func (k Keeper) GetBidUser(ctx sdk.Context, name string) sdk.AccAddress {
 	return k.GetWhois(ctx, name).BidUser
 }

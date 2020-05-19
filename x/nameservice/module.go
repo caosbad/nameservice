@@ -2,7 +2,7 @@ package nameservice
 
 import (
 	"encoding/json"
-	"github.com/caosbad/nameservice/x/nameservice/keeper"
+	"github.com/caosbad/nameservice/x/nameservice/types"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 
@@ -101,23 +101,29 @@ func (am AppModule) NewQuerierHandler() sdk.Querier {
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	var records []Whois
+	var records []types.Auction
 	currentBlockHeight := ctx.BlockHeight()
-	iterator := am.keeper.GetNamesIterator(ctx)
+	iterator := am.keeper.GetAuctionIterator(ctx)
 	for ; iterator.Valid(); iterator.Next() {
 
 		name := string(iterator.Key())
-		whois := am.keeper.GetWhois(ctx, name)
-		shouldSettleAuto := currentBlockHeight - whois.BlockHeight > 100
-		if whois.IsAuction && shouldSettleAuto {
-			records = append(records, whois)
+		auction := am.keeper.GetAuction(ctx, name)
+		shouldSettleAuto := currentBlockHeight - auction.BlockHeight > 100
+		if shouldSettleAuto && auction.BlockHeight > 0 {
+			records = append(records, auction)
 		}
 	}
 	//store := ctx.KVStore(am.keeper.storeKey)
-	for _, n := range records {
-		am.keeper.SetBidHeight(ctx, n.BlockHeight, 0)
-		am.keeper.SetOwner(ctx, n.Name, keeper.GetBidUser(ctx, msg.Name))
-		am.keeper.SetAuction(ctx, n.Name, false)
+	for _, a := range records {
+		// settle
+		_, err := am.keeper.CoinKeeper.AddCoins(ctx, am.keeper.GetOwner(ctx, a.Name), am.keeper.GetPrice(ctx, a.Name))
+		if err != nil {
+			break
+		}
+		am.keeper.SetBidHeight(ctx, a.Name, 0)
+		am.keeper.SetOwner(ctx, a.Name, am.keeper.GetBidUser(ctx, a.Name))
+		am.keeper.SetAuction(ctx, a.Name, false)
+		am.keeper.DeleteAuction(ctx, a.Name)
 	}
 }
 

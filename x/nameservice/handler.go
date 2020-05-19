@@ -72,7 +72,10 @@ func handleMsgDeleteName(ctx sdk.Context, keeper Keeper, msg types.MsgDeleteName
 	if !msg.Owner.Equals(keeper.GetOwner(ctx, msg.Name)) {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Incorrect Owner")
 	}
-
+	whois := keeper.GetWhois(ctx, msg.Name)
+	if whois.IsAuction {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Name in auction can not be deleted")
+	}
 	keeper.DeleteWhois(ctx, msg.Name)
 	return &sdk.Result{}, nil
 }
@@ -87,7 +90,7 @@ func handleMsgSetAuction(ctx sdk.Context, keeper Keeper, msg types.MsgSetAuction
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Incorrect Owner")
 	}
 
-	if keeper.GetAuction(ctx, msg.Name) {
+	if keeper.GetAuctionStatus(ctx, msg.Name) {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Auction already started")
 	}
 
@@ -100,7 +103,7 @@ func handleMsgSetAuction(ctx sdk.Context, keeper Keeper, msg types.MsgSetAuction
 
 // Handle a message bid
 func handleMsgBidName(ctx sdk.Context, keeper Keeper, msg types.MsgBidName) (*sdk.Result, error) {
-	if !keeper.GetAuction(ctx, msg.Name) {
+	if !keeper.GetAuctionStatus(ctx, msg.Name) {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Canot bid")
 	}
 	if msg.Bider.Equals(keeper.GetOwner(ctx, msg.Name)) {
@@ -143,6 +146,7 @@ func handleMsgBidName(ctx sdk.Context, keeper Keeper, msg types.MsgBidName) (*sd
 	keeper.SetBidHeight(ctx, msg.Name, currentBlockHeight)
 	// TODO add auction logic
 	//keeper.SetAuction(ctx, msg.Name, true)
+	keeper.AddAuction(ctx, msg.Name)
 	return &sdk.Result{}, nil
 }
 
@@ -162,8 +166,15 @@ func handleMsgClaimName(ctx sdk.Context, keeper Keeper, msg types.MsgClaimName) 
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "Incorrect Owner ")
 	}
 
+	// settle the auction price to owner
+	_, err := keeper.CoinKeeper.AddCoins(ctx, keeper.GetOwner(ctx, msg.Name), keeper.GetPrice(ctx, msg.Name))
+	if err != nil {
+		return nil, err
+	}
+
 	keeper.SetBidHeight(ctx, msg.Name, 0)
 	keeper.SetOwner(ctx, msg.Name, keeper.GetBidUser(ctx, msg.Name))
 	keeper.SetAuction(ctx, msg.Name, false)
+	keeper.DeleteAuction(ctx, msg.Name)
 	return &sdk.Result{}, nil
 }
